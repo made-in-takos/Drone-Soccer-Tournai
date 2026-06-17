@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/connectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Connecter à Goal-Rouge (ESP32)"/>
+
+    <TextView
+        android:id="@+id/scoreRed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Score Rouge: 0"
+        android:textSize="24sp"
+        android:layout_marginTop="32dp"/>
+
+    <TextView
+        android:id="@+id/scoreBlack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Score Noir: 0"
+        android:textSize="24sp"
+        android:layout_marginTop="16dp"/>
+</LinearLayout>
