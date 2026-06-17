@@ -19,6 +19,10 @@
 
   Mettre ENABLE_LED 0 ou ENABLE_RF_TX 0 pour tester sans ces modules.
 
+  Manettes RF (2000 bps, vers RF-5V GPIO 4) :
+    Manette rouge : SCP / SCM / RST
+    Manette bleue : B+  / B-  / RST  (sketch RF-Transmiter-Bleu)
+
   /!\ Ne pas utiliser GPIO 6 à 11 sur ESP32 — réservées à la flash.
 */
 
