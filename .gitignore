@@ -1,0 +1,9 @@
+# Android / Gradle
+**/.gradle/
+**/build/
+**/local.properties
+*.iml
+
+# IDE (fichiers locaux)
+**/.idea/workspace.xml
+**/.idea/caches/
