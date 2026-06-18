@@ -4,20 +4,39 @@
   Recoit du goal ROUGE (maitre) en 433 MHz :
     SYNC:rouge,bleu  RST  LED:BLU
 
-  WiFi + ArduinoOTA : televersement sans ouvrir le goal (1er flash en USB).
+  === MISE A JOUR OTA (WiFi) ===
+  Permet de televerser le firmware sans ouvrir le goal (apres le 1er flash USB).
+
+  Preparation (une seule fois) :
+    1) Copier wifi_secrets.example.h -> wifi_secrets.h (meme dossier)
+    2) Renseigner WIFI_SSID et WIFI_PASS de votre box / reseau terrain
+    3) wifi_secrets.h reste local — jamais sur GitHub
+
+  Premier televersement (obligatoire en USB) :
+    1) Carte IDE : LOLIN(WEMOS) D1 R2 & mini  |  Moniteur serie : 115200 baud
+    2) Brancher USB, televerser le sketch
+    3) Verifier dans le moniteur :
+         "WiFi OK — IP: x.x.x.x"
+         "OTA pret — hostname: goal-bleu"
+    4) Noter l'adresse IP affichee
+
+  Mises a jour suivantes (sans cable USB) :
+    1) PC portable et goal sur le MEME reseau WiFi
+    2) Arduino IDE -> Outils -> Carte : LOLIN(WEMOS) D1 R2 & mini
+    3) Outils -> Port -> "goal-bleu at x.x.x.x on ..."
+       (le port reseau apparait ~30 s apres le demarrage du goal)
+    4) Televerser comme d'habitude — mot de passe OTA : goalbleu
+    5) Pendant l'OTA : LEDs eteintes, flash but suspendu, redemarrage auto
+
+  Depannage OTA :
+    - Port reseau absent -> WiFi incorrect, goal trop loin de la box, ou redemarrer
+    - Mot de passe refuse -> constante OTA_PASSWORD (goalbleu) dans ce fichier
+    - WiFi echec au boot -> RF et LEDs restent actifs, mais pas d'OTA tant que le WiFi ne connecte pas
 
   === BRANCHEMENTS (WeMos / LOLIN D1 Mini) ===
   RF-5V DATA  ->  D2  (GPIO 4)   GND  5V  antenne 17,3 cm
   WS2812B     ->  D1  (GPIO 5)   GND  alim 5V separee
   GND commun avec goal rouge et alim ruban.
-
-  IDE : LOLIN(WEMOS) D1 R2 & mini  |  115200 baud
-  Copier wifi_secrets.example.h -> wifi_secrets.h (SSID / mot de passe)
-
-  OTA : Arduino IDE -> Outils -> Port -> goal-bleu-xxxxx at ...
-        Mot de passe OTA par defaut : goalbleu
-  IP : 192.168.1.11
-  Mot de passe OTA : goalbleu
 */
 
 #include <ESP8266WiFi.h>

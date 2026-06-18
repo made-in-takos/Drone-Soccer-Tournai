@@ -17,8 +17,34 @@
   4) Appairer Bluetooth "Goal-Rouge" -> app recoit RED:0;BLACK:0
   5) Brancher FS1000A GPIO 12 quand l esclave existera
 
-  WiFi + OTA : copier wifi_secrets.example.h -> wifi_secrets.h
-  1er televersement USB, puis OTA (hostname goal-rouge, mdp goalrouge).
+  === MISE A JOUR OTA (WiFi) ===
+  Permet de televerser le firmware sans ouvrir le goal (apres le 1er flash USB).
+
+  Preparation (une seule fois) :
+    1) Copier wifi_secrets.example.h -> wifi_secrets.h (meme dossier)
+    2) Renseigner WIFI_SSID et WIFI_PASS de votre box / reseau terrain
+    3) wifi_secrets.h reste local — jamais sur GitHub
+
+  Premier televersement (obligatoire en USB) :
+    1) Carte IDE : ESP32 Dev Module  |  Moniteur serie : 115200 baud
+    2) Brancher USB, televerser le sketch
+    3) Verifier dans le moniteur :
+         "WiFi OK — IP: x.x.x.x"
+         "OTA pret — hostname: goal-rouge"
+    4) Noter l'adresse IP affichee
+
+  Mises a jour suivantes (sans cable USB) :
+    1) PC portable et goal sur le MEME reseau WiFi
+    2) Arduino IDE -> Outils -> Carte : ESP32 Dev Module
+    3) Outils -> Port -> "goal-rouge at x.x.x.x on ..."
+       (le port reseau apparait ~30 s apres le demarrage du goal)
+    4) Televerser comme d'habitude — mot de passe OTA : goalrouge
+    5) Pendant l'OTA : LEDs eteintes, flash but suspendu, redemarrage auto
+
+  Depannage OTA :
+    - Port reseau absent -> WiFi incorrect, goal trop loin de la box, ou redemarrer
+    - Mot de passe refuse -> constante OTA_PASSWORD (goalrouge) dans ce fichier
+    - Désactiver temporairement : mettre ENABLE_OTA a 0 puis re-flasher en USB
 
   Mettre ENABLE_LED 0 ou ENABLE_RF_TX 0 pour tester sans ces modules.
 
