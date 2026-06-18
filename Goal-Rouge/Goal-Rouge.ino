@@ -17,6 +17,9 @@
   4) Appairer Bluetooth "Goal-Rouge" -> app recoit RED:0;BLACK:0
   5) Brancher FS1000A GPIO 12 quand l esclave existera
 
+  WiFi + OTA : copier wifi_secrets.example.h -> wifi_secrets.h
+  1er televersement USB, puis OTA (hostname goal-rouge, mdp goalrouge).
+
   Mettre ENABLE_LED 0 ou ENABLE_RF_TX 0 pour tester sans ces modules.
 
   Manettes RF (2000 bps, vers RF-5V GPIO 4) :
@@ -25,31 +28,48 @@
 
   /!\ Ne pas utiliser GPIO 6 à 11 sur ESP32 — réservées à la flash.
 */
-
+ 
 #include <RH_ASK.h>
 #include <SPI.h>
 #include <string.h>
 #define FASTLED_RMT5 1
 #define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
+#include <WiFi.h>
+#include <ArduinoOTA.h>
 #include "BluetoothSerial.h"
+
+#if __has_include("wifi_secrets.h")
+#include "wifi_secrets.h"
+#else
+#define WIFI_SSID "A_CONFIGURER"
+#define WIFI_PASS "A_CONFIGURER"
+#endif
+
+#define ENABLE_OTA     1
+#define OTA_HOSTNAME   "goal-rouge"
+#define OTA_PASSWORD   "goalrouge"
 
 #define ENABLE_LED     1  // 0 pour desactiver, 1 pour activer
 #define ENABLE_RF_TX   1
 #define RF_DEBUG       1   // 1 = affiche signal brut GPIO4 (desactiver quand RF OK)
 
-// 2000 = manette RF-Transmiter (SCP/SCM)  |  1000 = manette Ref-Remote (SC+/SC-)
-#define RF_BITRATE     2000
-#define RF_RX_PIN      4
-#define RF_TX_PIN      12   // FS1000A esclave — JAMAIS GPIO 6-11 (flash interne ESP32)
-#define RF_PTT_PIN     13   // broche fictive (pas de PTT) — eviter 0 et 6-11
-#define LED_PIN        2
-#define NUM_LEDS       60
-#define BT_NAME        "Goal-Rouge"
-#define RF_DEBOUNCE_MS 500
-#define FLASH_MS       2000
+// 2000 = vitesse (en bits/seconde) pour la communication RF avec la manette RF-Transmiter (SCP/SCM)
+// 1000 = ancienne vitesse (ex: manette Ref-Remote), non utilisée ici
+#define RF_BITRATE     2000  // Débit en bauds pour le module RF
+#define RF_RX_PIN      4     // Broche de réception RF, connectée au module RF-5V (reçoit SCP/SCM depuis manettes)
+#define RF_TX_PIN      12    // Broche de transmission RF, utile pour envoyer les scores à l'esclave (FS1000A) — ne jamais utiliser GPIO 6-11 sur ESP32 (car utilisé par la mémoire flash)
+#define RF_PTT_PIN     13    // Broche "Push-To-Talk" : ici fictive (non utilisée, mais requise par la lib) — éviter GPIO 0 et 6-11
+#define LED_PIN        2     // Broche de commande pour le ruban de LED WS2812B (60 LEDs)
+#define NUM_LEDS       60    // Nombre de LEDs WS2812B sur le ruban
+#define BT_NAME        "Goal-Rouge" // Nom Bluetooth visible lors de l'appairage du but rouge
+#define RF_DEBOUNCE_MS 500   // Temporisation (antirebond) en millisecondes pour valider boutons RF
+#define FLASH_MS       2000  // Durée du flash vert lors d’un but (en millisecondes)
 
+// Instanciation de la classe RH_ASK pour la communication RF (RadioHead) avec les bons paramètres
 RH_ASK rf(RF_BITRATE, RF_RX_PIN, RF_TX_PIN, RF_PTT_PIN);
+
+// Instanciation de la communication série Bluetooth (ESP32)
 BluetoothSerial SerialBT;
 
 CRGB leds[NUM_LEDS];
@@ -234,6 +254,48 @@ void handleMessage(const char *msg) {
   }
 }
 
+void setupWiFiAndOta() {
+#if ENABLE_OTA
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  Serial.print("WiFi ");
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 20000) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi echec — BT/RF actifs, OTA indisponible");
+    return;
+  }
+
+  Serial.print("WiFi OK — IP: ");
+  Serial.println(WiFi.localIP());
+
+  ArduinoOTA.setHostname(OTA_HOSTNAME);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+
+  ArduinoOTA.onStart([]() {
+    Serial.println("OTA demarre");
+    flashing = false;
+#if ENABLE_LED
+    setStrip(CRGB::Black);
+#endif
+  });
+  ArduinoOTA.onEnd([]() { Serial.println("OTA termine — redemarrage"); });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("OTA erreur [%u]\n", error);
+  });
+
+  ArduinoOTA.begin();
+  Serial.print("OTA pret — hostname: ");
+  Serial.println(OTA_HOSTNAME);
+#endif
+}
+
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -280,6 +342,8 @@ void setup() {
     Serial.println(BT_NAME);
   }
 
+  setupWiFiAndOta();
+
   Serial.println("Pret — en attente manettes (SCP SCM RST)");
 #if RF_DEBUG
   Serial.println("RF_DEBUG: GPIO4= niveau + changements/s (appuyez manette)");
@@ -289,6 +353,10 @@ void setup() {
 }
 
 void loop() {
+#if ENABLE_OTA
+  ArduinoOTA.handle();
+#endif
+
   if (SerialBT.hasClient() && !btSentInitial) {
     sendScoresBT();
     btSentInitial = true;

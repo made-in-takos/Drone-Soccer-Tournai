@@ -7,3 +7,6 @@
 # IDE (fichiers locaux)
 **/.idea/workspace.xml
 **/.idea/caches/
+
+# WiFi local (ESP8266 OTA)
+**/wifi_secrets.h
